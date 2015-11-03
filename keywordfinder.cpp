@@ -131,20 +131,26 @@ int KeywordFinder::FindoutKeyword(const wstring& source_orig, vector<KWPosition>
 
                 if (bAll)
                 {
-                    // 按返回边查找
-                    auto back_node = child_node->back;
-                    while (back_node && back_node != m_ac_tree)
-                    {
-                        get_key_pos(back_node);
-                        back_node = back_node->back;
-                    }
+                    node = child_node;
                 }
+                else
+                {
+                    // 按返回边查找
+                    node = child_node->back;
+                }
+                continue;
             }
 
             node = child_node;
         }
         catch (std::out_of_range)
         {
+            if (index > 1)
+            {
+                // 当前分支匹配失败，在原文中回退一次，从新的节点的重新匹配
+                --index;
+            }
+
             if (node->back)
             {
                 node = node->back;
@@ -303,7 +309,7 @@ __ac_trie_node*  KeywordFinder::__findout_keyword(wstring& word)
         }
     }
 
-    return node->isKey ? node : m_ac_tree; 
+    return node; 
 }
 
 void KeywordFinder::__add_back_edge()
@@ -313,24 +319,23 @@ void KeywordFinder::__add_back_edge()
 
     while(!traverse_list.empty())
     {
-        auto node_in_list = traverse_list.front();
+        auto ___node = traverse_list.front();
         traverse_list.pop_front();
-        if (node_in_list->isKey)
+        // add back edge for this node
+        wstring found_keyword;
+        __get_keyword_from_node(___node, found_keyword);
+        while (found_keyword.length())
         {
-            // add back edge for this node
-            wstring found_keyword;
-            auto ___node = node_in_list;
-            __get_keyword_from_node(___node, found_keyword);
-            while (found_keyword.length())
+            found_keyword.erase(found_keyword.begin());
+            ___node->back =  __findout_keyword(found_keyword);
+            if (___node->back != m_ac_tree)
             {
-                found_keyword.erase(found_keyword.begin());
-                ___node->back =  __findout_keyword(found_keyword);
-				___node = ___node->back;
+                break;
             }
         }
 
-        auto node_it = node_in_list->child_li.begin();
-        for (; node_it != node_in_list->child_li.end(); ++node_it)
+        auto node_it = ___node->child_li.begin();
+        for (; node_it != ___node->child_li.end(); ++node_it)
         {
             traverse_list.push_back(node_it->second);
         }
@@ -339,11 +344,11 @@ void KeywordFinder::__add_back_edge()
 
 int KeywordFinder::__get_keyword_from_node(__ac_trie_node* node, wstring& keyword)
 {
-    do
+    while (node != m_ac_tree)
     {
         keyword += node->ch;
 		node = node->parent;
-    }while (node != m_ac_tree);
+    }
 
     // reverse string
     for (unsigned int i = 0; i <  keyword.length()/2; i++)
