@@ -13,7 +13,6 @@
 #include <stdexcept>
 #include <sstream>
 
-
 KeywordFinder::KeywordFinder(const char* filepath, int filetype)
 :m_ac_tree(0)
 {
@@ -147,14 +146,20 @@ int KeywordFinder::FindoutKeyword(const wstring& source_orig, vector<KWPosition>
         catch (std::out_of_range)
         {
             // next char in source.
-			if (node != m_ac_tree)
-			{
-				// 当前查找的字符是从之前已经匹配上的字符的节点开始的
-				// 应当再从根节点开始再查找一次
-				--index;
-			}
+            if (node != m_ac_tree)
+            {
+                // 当前查找的字符是从之前已经匹配上的字符的节点开始的
+                --index;
+            }
 
-            node = m_ac_tree;
+            if (node->back)
+            {
+                node = node->back;
+            }
+            else
+            {
+                node = m_ac_tree;
+            }
             continue;
         }
 

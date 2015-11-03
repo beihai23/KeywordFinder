@@ -5,6 +5,7 @@
 #ifndef WIN32
 #include <sys/time.h>
 #endif
+#include <algorithm>
 
 #ifdef WIN32
 void ascii2unicode(string in, wstring& out)
@@ -33,35 +34,38 @@ uint64_t GetTickCountMS(void)
 
 int main(int argc, char** argv)
 {
-    vector<KWPosition> kws;
     try
     {
         uint64_t begin = GetTickCountMS();
         KeywordFinder* kfinder = new KeywordFinder("RestrictList.dat", 0);
         cout << "construct KeywordFinder exhaust:" << GetTickCountMS() - begin << " ms." << endl;
 
-        string input;
-        cout << "please input content:";
-        std::getline(cin, input);
+        while (true)
+        {
+            vector<KWPosition> kws;
+            string input;
+            cout << "please input content:";
+            std::getline(cin, input);
+            std::transform(input.begin(),input.end(),input.begin(),::tolower);
 
-        wstring content;
+            wstring content;
 #ifdef WIN32
-		ascii2unicode(input, content);
+            ascii2unicode(input, content);
 #else
-        kfinder->__utf8tounicode(input, content);
+            kfinder->__utf8tounicode(input, content);
 #endif
 
-        cout << "length of input=" << input.size() << " and input content:" << input <<endl;
+            cout << "length of input=" << input.size() << " and input content:" << input <<endl;
 
-        kfinder->FindoutKeyword(content, kws, false);
-        cout << "found:" << dec << kws.size() << endl;
-        for (auto it = kws.begin(); it != kws.end(); ++it)
-        {
-            KWPosition& kw = *it;
-			cout << "keyword pos:" << kw.position << " keyword length:" << kw.keyword.length() << endl;
+            kfinder->FindoutKeyword(content, kws, false);
+            cout << "found:" << dec << kws.size() << endl;
+            for (auto it = kws.begin(); it != kws.end(); ++it)
+            {
+                KWPosition& kw = *it;
+                cout << "keyword pos:" << kw.position << " keyword length:" << kw.keyword.length() << endl;
+            }
         }
 
-		std::getline(cin, input);
 
         delete kfinder;
     }
