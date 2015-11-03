@@ -145,13 +145,6 @@ int KeywordFinder::FindoutKeyword(const wstring& source_orig, vector<KWPosition>
         }
         catch (std::out_of_range)
         {
-            // next char in source.
-            if (node != m_ac_tree)
-            {
-                // 当前查找的字符是从之前已经匹配上的字符的节点开始的
-                --index;
-            }
-
             if (node->back)
             {
                 node = node->back;
@@ -164,7 +157,6 @@ int KeywordFinder::FindoutKeyword(const wstring& source_orig, vector<KWPosition>
         }
 
     }
-
     return 0; 
 }
 
