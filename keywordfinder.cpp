@@ -183,6 +183,19 @@ bool KeywordFinder::_load_keyword(const char* filepath)
     string in;
     while(getline(kf, in))
     {
+        string::size_type n;
+        n = in.rfind("\r\n");
+        if (in.length() > 2 && in.length() - 2 == n)
+        {
+            in.pop_back();
+            in.pop_back();
+        }
+        n = in.rfind("\n");
+        if (in.length() > 1 && in.length() - 1 == n)
+        {
+            in.pop_back();
+        }
+
         // trans keyword to unicode
         wstring keyword;
 		// add by yanwei: convert string to lower
