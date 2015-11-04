@@ -86,84 +86,92 @@ int KeywordFinder::FindoutKeyword(const wstring& source_orig, vector<KWPosition>
 
     //======================================
     auto node = m_ac_tree;
-    auto child_node = m_ac_tree;
     for (unsigned int index = 0; index < source.length(); ++index)
     {
         try
         {
-            child_node = node->child_li.at(source[index]);
-            if (child_node->isKey)
+            node = node->child_li.at(source[index]);
+CHECK_KEY:
+            if (node->isKey)
             {
                 // found keyword.
-                auto get_key_pos = [&](__ac_trie_node* __node)
+                _get_key_pos(node, index, source, words);
+                // 按返回边查找
+                if (node->back)
                 {
-                    KWPosition kwp;
-                    __get_keyword_from_node(__node, kwp.keyword);
-                    kwp.position = index - kwp.keyword.length() + 1;
-
-                    bool isEng = true;
-                    for (unsigned int _ki = 0; _ki < kwp.keyword.length(); ++_ki)
-                    {
-                        if (!_isEngAlpha(kwp.keyword[_ki]))
-                        {
-                            isEng = false;
-                            break;
-                        }
-                    }
-
-                    if (isEng)
-                    {
-                        // 关键字是英文单词时，只匹配完整的单词(就是前后要有空格，或者是在行首或行尾)
-                        int pos_head = kwp.position - 1;
-                        int pos_tail = kwp.position + kwp.keyword.length();
-                        if ((pos_head == -1 || !_isEngAlpha(source[pos_head]))
-                                && (pos_tail == source.length() || !_isEngAlpha(source[pos_tail])))
-                        {
-                            words.push_back(kwp);
-                        }
-                    }
-                    else
-                    {
-                        words.push_back(kwp);
-                    }
-                };
-                get_key_pos(child_node);
-
-                if (bAll)
-                {
-                    node = child_node;
+                    node = node->back;
+                    goto CHECK_KEY;
                 }
-                else
-                {
-                    // 按返回边查找
-                    node = child_node->back;
-                }
-                continue;
             }
-
-            node = child_node;
+            else
+            {
+                if (index == source.length() - 1)
+                {
+                    // finished at source, but not find key
+                    // use back edge try again.
+                    if (node->back)
+                    {
+                        node = node->back;
+                        goto CHECK_KEY;
+                    }
+                }
+            }
         }
         catch (std::out_of_range)
         {
-            if (index > 1)
+            if (node != m_ac_tree)
             {
-                // 当前分支匹配失败，在原文中回退一次，从新的节点的重新匹配
-                --index;
+                --index; // 当前分支匹配失败，在原文中回退一次，从新的节点的重新匹配
             }
-
             if (node->back)
             {
                 node = node->back;
+                if (node->isKey)
+                {
+                    // found keyword.
+                    _get_key_pos(node, index, source, words);
+                }
             }
             else
             {
                 node = m_ac_tree;
             }
-            continue;
         }
-
     }
     return 0; 
+}
+
+void KeywordFinder::_get_key_pos(__ac_trie_node* node, int index, const wstring& source, vector<KWPosition>& words)
+{
+    KWPosition kwp;
+    __get_keyword_from_node(node, kwp.keyword);
+    kwp.position = index - kwp.keyword.length() + 1;
+
+    bool isEng = true;
+    for (unsigned int _ki = 0; _ki < kwp.keyword.length(); ++_ki)
+    {
+        if (!_isEngAlpha(kwp.keyword[_ki]))
+        {
+            isEng = false;
+            break;
+        }
+    }
+
+    if (isEng)
+    {
+        // 关键字是英文单词时，只匹配完整的单词(就是前后要有空格，或者是在行首或行尾)
+        int pos_head = kwp.position - 1;
+        int pos_tail = kwp.position + kwp.keyword.length();
+        if ((pos_head == -1 || !_isEngAlpha(source[pos_head]))
+                && (pos_tail == source.length() || !_isEngAlpha(source[pos_tail])))
+        {
+            words.push_back(kwp);
+        }
+    }
+    else
+    {
+        words.push_back(kwp);
+    }
 }
 
 bool KeywordFinder::_isEngAlpha(wchar_t wch)
@@ -252,8 +260,8 @@ bool KeywordFinder::__utf8tounicode(string in, wstring& out)
     if (-1 == ret)
     {
         perror("iconv failed, errorno=");
-        if ((iconv_t)-1 != m_conv_ctx)
-            iconv_close(m_conv_ctx);
+        //if ((iconv_t)-1 != m_conv_ctx)
+        //    iconv_close(m_conv_ctx);
 
         delete[] outBuf;
         return false;
