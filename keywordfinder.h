@@ -72,6 +72,7 @@ public:
     bool __utf8tounicode(string in, wstring& out);
 
 protected:
+    void _get_key_pos(__ac_trie_node* node, int index, const wstring& source, vector<KWPosition>& words);
 	bool _isEngAlpha(wchar_t wch);
     bool _load_keyword(const char* filepath);
     void _gen_trie();
