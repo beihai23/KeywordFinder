@@ -18,10 +18,11 @@ KeywordFinder::KeywordFinder(const char* filepath, int filetype)
 {
 #ifndef WIN32
     char toCoding[24] = {0};
-    sprintf(toCoding, "UCS%d", sizeof(wchar_t));
+    sprintf(toCoding, "UCS-%d", sizeof(wchar_t));
     m_conv_ctx = iconv_open(toCoding,"UTF-8");
     if ((iconv_t)-1 == m_conv_ctx)
     {
+        perror("iconv_open failed; ");
         throw "iconv_open failed";
         return;
     }
